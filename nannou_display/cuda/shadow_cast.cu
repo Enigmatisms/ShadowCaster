@@ -8,13 +8,30 @@
 
 float* point_angles = nullptr, *sorted_angles = nullptr;
 bool* next_valid = nullptr;
-Vec2* all_points = nullptr;
-char* next_ids = nullptr;
 int all_point_num = 0;              // set in memAllocator
 
-__host__ void memAllocator(size_t point_num) {
+__constant__ Vec2 all_points[4096];
+__constant__ char next_ids[4096];
 
+__host__ void deallocatePoints() {
+    CUDA_CHECK_RETURN(cudaFree(point_angles));
+    CUDA_CHECK_RETURN(cudaFree(sorted_angles));
+    CUDA_CHECK_RETURN(cudaFree(next_valid));
 }
+
+void updatePointInfo(const Vec2* const meshes, const char* const nexts, int point_num, bool initialized) {
+    size_t mesh_point_cnt = 0;
+    CUDA_CHECK_RETURN(cudaMemcpyToSymbol(all_points, meshes, sizeof(Vec2) * point_num, 0, cudaMemcpyHostToDevice));
+    CUDA_CHECK_RETURN(cudaMemcpyToSymbol(next_ids, nexts, sizeof(char) * point_num, 0, cudaMemcpyHostToDevice));
+    if (initialized == true)
+        deallocatePoints();
+
+    CUDA_CHECK_RETURN(cudaMalloc((void**) &point_angles, sizeof(float) * point_num));
+    CUDA_CHECK_RETURN(cudaMalloc((void**) &sorted_angles, sizeof(float) * point_num));
+    CUDA_CHECK_RETURN(cudaMalloc((void**) &next_valid, sizeof(bool) * point_num));
+    all_point_num = point_num;
+}
+
 
 __host__ void backCullPreprocess(const Vec3& pose, float* host_output) {
     const int thread_per_block = static_cast<int>(std::ceil(static_cast<float>(all_point_num) / PREPROCESS_BLOCK));
