@@ -12,4 +12,4 @@ __host__ void deallocatePoints();
 __host__ void updatePointInfo(const Vec2* const meshes, const char* const nexts, int point_num, bool initialized);
 
 // 所有点都已经在初始化时移动到常量内存中
-__host__ void backCullPreprocess(const Vec3& pose);
+__host__ void shadowCasting(const Vec3& pose, Vec2* const host_output, int& point_num);

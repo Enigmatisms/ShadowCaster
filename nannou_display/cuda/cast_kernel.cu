@@ -12,11 +12,10 @@ __device__ __forceinline__ float orderedIntToFloat( const int intVal ) {
     return __int_as_float( (intVal >= 0) ? intVal ^ 0xFFFFFFFF : intVal ^ 0x80000000);
 }
 
-void backCullPreprocessKernel(
+__global__ void backCullPreprocessKernel(
     const Vec2* const points, const char* const next_ids, const Vec3 pose, 
     int all_point_num, float* angles, bool* mesh_valid
 ) {
-    const int thread_idx = threadIdx.x;
     const int point_base = blockIdx.x * blockDim.x + threadIdx.x;
     if (point_base < all_point_num) {              // for the last block, thread might be less than act_point_num
         const int next_id = static_cast<int>(next_ids[point_base]);
@@ -32,7 +31,7 @@ void backCullPreprocessKernel(
     __syncthreads();
 }
 
-void simpleDuplicateKernel(
+__global__ void simpleDuplicateKernel(
     const float* const inputs, float* const outputs
 ) {
     const float input_angle = inputs[threadIdx.x];
@@ -40,13 +39,13 @@ void simpleDuplicateKernel(
     outputs[1 + (threadIdx.x << 1)] = input_angle + 1e-4;
 }
 
-void pointIntersectKernel(
+__global__ void pointIntersectKernel(
     const Vec2* const points, const char* const next_ids, const float* const rays, const float* const angles,
-    const bool* const mesh_valid, Vec2* outputs, const Vec3 pose, int all_seg_num, int all_ray_num, int ray_boffset, int seg_boffset
+    const bool* const mesh_valid, float* outputs, const Vec3 pose, int all_seg_num, int all_ray_num, int ray_boffset, int seg_boffset
 ) {
     // blockIdx.x 是 本次处理的面片block id, y是光线块id，threadIdx.x 是光线内部偏移，y是面片id
     extern __shared__ int mini_depth[];     // ordered int for depth atomic comp
-    if (threadIdx.y == 0) {
+    if (threadIdx.y == 0) {                 // shared memory initialization
         mini_depth[threadIdx.x] = BIG_FLOAT;
     }
     __syncthreads();
@@ -77,11 +76,20 @@ void pointIntersectKernel(
     if (threadIdx.y == 0) {
         const float ray_angle = rays[ray_id];           // I hate repeating myself
         const int output_id = seg_base * all_ray_num + ray_base * blockDim.x + threadIdx.x;
-        const Point op = Point(cos(ray_angle), sin(ray_angle)) * orderedIntToFloat(mini_depth[threadIdx.x]) + Point(pose);
-        Vec2& output = outputs[output_id];
-        output.x = op.x;
-        output.y = op.y;
+        outputs[output_id] = orderedIntToFloat(mini_depth[threadIdx.x]);
     }
     __syncthreads();
 }
 
+__global__ void depth2PointKernel(const float* const all_outputs, const float* const ray_angle, const Vec3 pose, Vec2* const out_pts) {
+    const int ray_num = blockDim.x, ray_id = threadIdx.x;
+    float min_depth = 32767.0;
+    for (int i = 0; i < 4; i++) {
+        min_depth = min(min_depth, all_outputs[i * ray_num + ray_id]);
+    }
+    const float angle = ray_angle[ray_id];
+    const Point op = Point(cosf(angle), sinf(angle)) * min_depth + Point(pose);
+    Vec2& output = out_pts[ray_id];
+    output.x = op.x;
+    output.y = op.y;
+}
