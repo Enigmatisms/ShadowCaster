@@ -5,10 +5,9 @@
 
 use std::fs;
 use nannou::prelude::*;
-use std::f32::consts::PI;
 use std::io::{prelude::*, BufReader};
 use serde_derive::{Deserialize, Serialize};
-use super::cuda_helper::{Vec2_cuda, Vec3_cuda, self};
+use super::cast_impl::{Vec2_cuda, self};
 
 pub type Mesh = Vec<Point2>;
 pub type Meshes = Vec<Mesh>;
@@ -52,7 +51,7 @@ pub fn parse_map_file<T>(filepath: T) -> Option<Meshes> where T: AsRef<std::path
     }
 }
 
-pub fn meshes_to_segments(meshes: &Meshes, segments: &mut Vec<cuda_helper::Vec2_cuda>) -> usize {
+pub fn meshes_to_segments(meshes: &Meshes, segments: &mut Vec<cast_impl::Vec2_cuda>) -> usize {
     let mut ptr: usize = 0;
     for mesh in meshes.iter() {
         let first = &mesh[0];
@@ -71,8 +70,7 @@ pub fn meshes_to_segments(meshes: &Meshes, segments: &mut Vec<cuda_helper::Vec2_
 pub fn read_config<T>(file_path: T) -> Config where T: AsRef<std::path::Path> {
     let file: fs::File = fs::File::open(file_path).ok().unwrap();
     let reader = BufReader::new(file);
-    let mut config: Config = serde_json::from_reader(reader).ok().unwrap();
-    config
+    serde_json::from_reader(reader).ok().unwrap()
 }
 
 // ========== privates ==========

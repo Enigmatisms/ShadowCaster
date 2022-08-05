@@ -1,4 +1,6 @@
 use nannou::prelude::*;
+use super::cast_impl;
+
 use super::map_io;
 use super::color::{EditorColor};
 
@@ -8,6 +10,12 @@ pub struct WindowCtrl {
     pub win_h: f32,
     pub gui_visible: bool,
     pub exit_func: fn(app: &App)
+}
+
+impl WindowCtrl {
+    pub fn new(win_id: WindowId, win_w: f32, win_h: f32, exit_f: fn(app: &App)) -> WindowCtrl {
+        WindowCtrl {window_id: win_id, win_w: win_w, win_h: win_h, gui_visible: true, exit_func: exit_f}
+    }
 }
 
 pub struct CastCtrl {
@@ -30,7 +38,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(app: &App, window_id:  WindowId, config: &map_io::Config, meshes: map_io::Meshes, pt_num: usize) -> Model {
+    pub fn new(window_id:  WindowId, config: &map_io::Config, meshes: map_io::Meshes, pt_num: usize) -> Model {
         Model {
             map_points: meshes, 
             caster: CastCtrl::new(pt_num),
@@ -43,7 +51,7 @@ impl Model {
 
 fn exit(app: &App) {
     unsafe {
-        cuda_helper::deallocatePoints();
+        cast_impl::deallocatePoints();
     }
     app.quit();
 }

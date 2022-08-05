@@ -136,6 +136,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "casting"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "libc",
+ "nannou",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1172,15 +1184,6 @@ dependencies = [
  "num-traits",
  "palette",
  "rand 0.8.5",
-]
-
-[[package]]
-name = "nannou_display"
-version = "0.1.0"
-dependencies = [
- "cc",
- "libc",
- "nannou",
 ]
 
 [[package]]
