@@ -1,2 +1,2 @@
 # ShadowCaster
-Efficient parallel 2D show caster implemented in CUDA and Rust.
+Efficient parallel 2D shadow caster implemented in CUDA and Rust.
