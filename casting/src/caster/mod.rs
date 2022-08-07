@@ -3,3 +3,4 @@ pub mod model;
 pub mod viz;
 pub mod color;
 pub mod cast_impl;
+pub mod fragment_shader;

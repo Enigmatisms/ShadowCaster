@@ -2,8 +2,9 @@ use nannou::prelude::*;
 use super::cast_impl;
 use super::model::Model;
 use super::map_io;
+use super::fragment_shader::{monotone_triangles, get_triangles};
 
-const BOUNDARIES: [(f32, f32); 4] = [(-1e6, -1e6), (1e6, -1e6), (1e6, 1e6), (-1e6, 1e6)];
+const BOUNDARIES: [(f32, f32); 4] = [(-570., -420.), (570., -420.), (570., 420.), (-570., 420.)];
 const BOUNDARY_IDS: [i8; 4] = [3, 0, 0, -3];
 
 pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
@@ -91,6 +92,17 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
     let (bg_r, bg_g, bg_b) = model.color.bg_color;
     draw.background().rgba(bg_r, bg_g, bg_b, 1.0);
+    
+    
+    let viz_pts = &model.caster.viz_pts;
+    // let (shade_r, shade_g, shade_b, shade_a) = model.color.shade_color;
+    let raw_tris = get_triangles(viz_pts);
+    let tris = monotone_triangles(raw_tris, pt2(model.pose.x, model.pose.y));
+    draw.mesh().tris_colored(tris);
+    // draw.polygon()
+    //     .rgba(shade_r, shade_g, shade_b, shade_a)
+    //     .points((0..viz_pts.len()).map(|i| {viz_pts[i]}));
+
     let (r, g, b, a) = model.color.shape_color;
     for mesh in model.map_points.iter() {
         let points = (0..mesh.len()).map(|i| {
@@ -100,12 +112,6 @@ fn view(app: &App, model: &Model, frame: Frame) {
             .rgba(r, g, b, a)
             .points(points);
     }
-    
-    let viz_pts = &model.caster.viz_pts;
-    let (shade_r, shade_g, shade_b, shade_a) = model.color.shade_color;
-    draw.polygon()
-        .rgba(shade_r, shade_g, shade_b, shade_a)
-        .points((0..viz_pts.len()).map(|i| {viz_pts[i]}));
     
     draw.ellipse()
         .w(15.)
