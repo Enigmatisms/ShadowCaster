@@ -4,5 +4,5 @@
         "width":1200,
         "height":900
     },
-    "map_path":"../maps/standard0.txt"
+    "map_path":"../maps/test_gl.txt"
 }

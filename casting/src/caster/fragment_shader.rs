@@ -2,7 +2,6 @@
  * Tessellated visible area
  * Fragment shader
  * This fragment shader is a false one (not applicable to non-convex polygon)
- * 本人设计的tessellation 算法，很可惜，此算法只适用于凸多边形的三角化
  */
 use nannou::prelude::*;
 
@@ -10,11 +9,36 @@ pub fn get_triangles(viz_pts: &Vec<Point2>) -> Vec<geom::Tri> {
     recurvise_reduce(viz_pts, viz_pts.len())
 }
 
+pub fn radial_triangles(origin: Point2, viz_pts: &Vec<Point2>) -> Vec<geom::Tri> {
+    let mut results: Vec<geom::Tri> = Vec::new();
+    for i in 0..viz_pts.len() {
+        results.extend(radial_fragments(&origin, &viz_pts[i], &viz_pts[(i + 1) % viz_pts.len()]));
+    }
+    results
+}
+
+fn radial_fragments(origin: &Point2, p1: &Point2, p2: &Point2) -> Vec<geom::Tri> {
+    let dir = *p2 - *p1;
+    let length = dir.length();
+    let v = dir.normalize();
+    let mut last_pt = *p1;
+    let mut acc_len = 0.0;
+    let mut result: Vec<geom::Tri> = Vec::new();
+    while acc_len < length {
+        let pt = 2.0 * v + last_pt;
+        push_tri_from_pts(&mut result, *origin, last_pt, pt);
+        last_pt = pt;
+        acc_len += 2.0;
+    }
+    push_tri_from_pts(&mut result, *origin, last_pt, *p2);
+    result
+}
+
 pub fn monotone_triangles(tri_pts: Vec<geom::Tri>, pos: Point2) -> impl Iterator<Item = geom::Tri<(Vec3, Srgba)>> {
     (0..tri_pts.len()).map(move |i| {
         tri_pts[i].map_vertices(|v| {
             let diff = (pt2(v.x, v.y) - pos).length();
-            let coeff = (1.0 - diff / 300.).max(0.);
+            let coeff = (1.0 - diff / 1200.).max(0.);
             let color: Srgba = srgba(coeff, coeff, coeff, 1.0);
             (v, color)
         })
@@ -31,6 +55,11 @@ fn order_check(p1: &Point2, p2: &Point2, p3: &Point2) -> bool {
 #[inline(always)]
 fn push_tri(result: &mut Vec<geom::Tri>, pts: &Vec<Point2>, i0: usize, i1:usize, i2: usize) {
     result.push(geom::Tri([pts[i0].extend(0.), pts[i1].extend(0.), pts[i2].extend(0.)]));
+}
+
+#[inline(always)]
+fn push_tri_from_pts(result: &mut Vec<geom::Tri>, p0: Point2, p1: Point2, p2: Point2) {
+    result.push(geom::Tri([p0.extend(0.), p1.extend(0.), p2.extend(0.)]));
 }
 
 fn recurvise_reduce(pts: &Vec<Point2>, last_len: usize) -> Vec<geom::Tri> {

@@ -73,6 +73,21 @@ pub fn read_config<T>(file_path: T) -> Config where T: AsRef<std::path::Path> {
     serde_json::from_reader(reader).ok().unwrap()
 }
 
+pub fn load_map_file(map_points: &mut Meshes) -> String {
+    let path = rfd::FileDialog::new()
+        .set_file_name("../maps/standard0.txt")
+        .set_directory(".")
+        .pick_file();
+    let mut result = String::new();
+    if let Some(path_res) = path {
+        result = String::from(path_res.as_os_str().to_str().unwrap());
+        *map_points = parse_map_file(path_res).unwrap();
+    } else {
+        map_points.clear();
+    }
+    result
+}
+
 // ========== privates ==========
 fn read_lines<T>(filepath: T) -> Option<Vec<String>> where T: AsRef<std::path::Path> {
     if let Ok(file) = fs::File::open(filepath) {
